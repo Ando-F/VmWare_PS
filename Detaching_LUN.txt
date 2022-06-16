@@ -1,0 +1,40 @@
+Отключение неиспользуемых датасторов	
+ 
+Перед использованием запросов из описания необходимо загрузить 
+библиотеку (DatastorFunctions) с функциями или же сразу добавить себе в профиль ПОШа
+
+Дополнение:
+
+Если какой-либо device успешно проходит проверку на возможность выполнения detach,
+но по факту в момент выполнения операции выдается сообщение что он "in use" рекомендуется проделать следующую проверку:
+
+1) Подключиться через консоль SSH непосредственно на хост с проблемным device.
+2) Просмотреть список vmfs volumes командой ls /vmfs/volumes/ -l  на предмет криво депрезентованных хранилищ.
+3) Выполнить unmount проблемного устройства командой esxcli storage filesystem unmount -p /vmfs/volumes/
+
+Если знаешь WWNи/или VMFS уже удалил.
+..\DatastoreFunctions.ps1
+
+#Detach/Attach datastore by canonicalname
+$VMHosts = Get-VMHost -Location MSK-*-V*0-**
+#$VMHosts = Get-VMHost -name "msk-sss-ddd*.on.ru"
+$naa6disks =    @(“naa.60002ac0000000000000000b0000c641"
+                  "naa.60002ac0000000000000001400005180")
+foreach ($VMHost in    $VMHosts){
+  foreach ($naa6 in    $naa6disks){
+    Write-Host "Detaching LUN $naa6 to ESXi host $VMHost"
+    #Attach-Disk -VMHost $VMhost -CanonicalName $naa6
+    Detach-Disk -VMHost $VMhost -CanonicalName $naa6
+    }
+  }
+Если VMFS удалять не нужно.  
+..\DatastoreFunctions.ps1
+$DetachDataStore =    Get-Datastore -Name MSK-Ddd-vd0f0a-MIX-*
+$DetachDataStore |  Unmount-Datastore$
+DetachDataStore |Detach-Datastore
+
+Инфа по датасторам 
+Get-Datastore -Name MSK-Ddd-vd0f0a-MIX-* |
+Get-DatastoreMountInfo |
+Sort Datastore, VMHost |
+FT -AutoSize
